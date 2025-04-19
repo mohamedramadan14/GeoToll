@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/mohamedramadan14/roads-fees-system/types"
+	"github.com/mohamedramadan14/roads-fees-system/utilities"
+	"github.com/sirupsen/logrus"
 )
 
 const sendInterval = time.Second
@@ -49,6 +50,7 @@ func websocketConnect() (*websocket.Conn, error) {
 }
 
 func main() {
+	utilities.InitLogger()
 	seedInit()
 	var conn *websocket.Conn
 	for {
@@ -56,11 +58,11 @@ func main() {
 			var err error
 			conn, err = websocketConnect()
 			if err != nil {
-				log.Printf("Failed to connect to WebSocket: %v", err)
+				logrus.Errorf("Failed to connect to WebSocket: %v", err)
 				time.Sleep(reconnectInterval)
 				continue
 			}
-			log.Printf("Successfully connected to WebSocket to %s", wsEndpoint)
+			logrus.Infof("Successfully connected to WebSocket to %s", wsEndpoint)
 		}
 		lat, long := generateLocation()
 		sequence++
@@ -70,16 +72,15 @@ func main() {
 			Long:  long,
 		}
 
-		fmt.Printf("Generated Location: %+v\n", obuData)
-
 		err := sendOBUData(conn, obuData)
 		if err != nil {
-			log.Printf("Error sending OBU data: %v", err)
+			logrus.Errorf("Error sending OBU data: %v", err)
 			conn.Close()
 			conn = nil
-			log.Printf("Connection closed. Will reconnect on next iteration.")
+			logrus.Warnf("Connection closed. Will reconnect on next iteration.")
 			continue
 		}
+		logrus.Infof("Sent OBU data: %+v", obuData)
 		time.Sleep(sendInterval)
 	}
 }
