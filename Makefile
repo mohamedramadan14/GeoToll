@@ -6,4 +6,12 @@ receiver:
 	@go build -o ./bin/receiver ./obu-data-receiver
 	@./bin/receiver
 
-.PHONY: obu
+calculator:
+	@go build -o ./bin/distance ./distance-calculator
+	@./bin/distance
+
+invoicer:
+	@go build -o ./bin/invoicer ./invoicer
+	@./bin/invoicer
+
+.PHONY: obu invoicer 

@@ -15,7 +15,9 @@ const sendInterval = time.Second
 const wsEndpoint = "ws://localhost:8085/ws"
 const reconnectInterval = 3 * time.Second
 
-var sequence int = 0
+var (
+	sequence int = 0
+)
 
 func generateCoordinate() float64 {
 	n := float64(rand.Intn(100) + 1)
@@ -66,6 +68,7 @@ func main() {
 		}
 		lat, long := generateLocation()
 		sequence++
+
 		obuData := types.OBUData{
 			OBUID: sequence,
 			Lat:   lat,
