@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"time"
 
+	"github.com/mohamedramadan14/roads-fees-system/aggregator/client"
 	"github.com/mohamedramadan14/roads-fees-system/types"
 	"github.com/sirupsen/logrus"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -19,11 +21,12 @@ var options = []kgo.Opt{
 var pointsStore = make(map[int]types.OBUData)
 
 type KafkaConsumer struct {
-	consumer *kgo.Client
-	service  DistanceServicer
+	consumer        *kgo.Client
+	service         DistanceServicer
+	aggregateClient *client.Client
 }
 
-func NewKafkaConsumer(topic string, svc DistanceServicer) (*KafkaConsumer, error) {
+func NewKafkaConsumer(topic string, svc DistanceServicer, client *client.Client) (*KafkaConsumer, error) {
 	c, err := kgo.NewClient(options...)
 	if topic != "" {
 		c.AddConsumeTopics(topic)
@@ -39,8 +42,9 @@ func NewKafkaConsumer(topic string, svc DistanceServicer) (*KafkaConsumer, error
 	logrus.Info("Waiting for OBU messages...")
 
 	return &KafkaConsumer{
-		consumer: c,
-		service:  svc,
+		consumer:        c,
+		service:         svc,
+		aggregateClient: client,
 	}, nil
 }
 
@@ -71,6 +75,17 @@ func (kc *KafkaConsumer) ConsumeMessageLoop(ctx context.Context) {
 					continue
 				}
 				logrus.Infof("Distance calculated for OBU ID: %d is %f", data.OBUID, distance)
+				invoiceData := types.Distance{
+					Value: distance,
+					OBUID: data.OBUID,
+					Unix:  time.Now().UnixNano(),
+				}
+
+				if err = kc.aggregateClient.AggregateInvoice(invoiceData); err != nil {
+					logrus.Errorf("Failed to aggregate invoice for OBU ID: %d due to %v", data.OBUID, err)
+				} else {
+					logrus.Infof("Invoice aggregated for OBU ID: %d", data.OBUID)
+				}
 			}
 			pointsStore[data.OBUID] = data
 		}

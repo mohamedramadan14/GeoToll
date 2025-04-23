@@ -5,3 +5,9 @@ type OBUData struct {
 	Lat   float64 `json:"lat"`
 	Long  float64 `json:"long"`
 }
+
+type Distance struct {
+	Value float64 `json:"value"`
+	OBUID int     `json:"obuID"`
+	Unix  int64   `json:"unix"`
+}

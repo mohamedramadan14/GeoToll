@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/mohamedramadan14/roads-fees-system/aggregator/client"
 	"github.com/mohamedramadan14/roads-fees-system/utilities"
 	"github.com/sirupsen/logrus"
 )
@@ -11,8 +12,9 @@ func main() {
 
 	svc := NewDistanceService()
 	svcWithLogging := NewLogMiddleware(svc)
+	aggregatorClient := client.NewClient("http://localhost:3100/aggregate")
+	c, err := NewKafkaConsumer(kafkaTopic, svcWithLogging, aggregatorClient)
 
-	c, err := NewKafkaConsumer(kafkaTopic, svcWithLogging)
 	if err != nil {
 		logrus.Fatalf("Failed to create Kafka consumer: %v", err)
 	}
